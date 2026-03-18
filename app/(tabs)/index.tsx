@@ -1,98 +1,211 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { Asset } from 'expo-asset';
+import * as FileSystem from 'expo-file-system/legacy';
+import { GLView } from 'expo-gl';
+import { Renderer } from 'expo-three';
+import { useEffect, useRef, useState } from 'react';
+import { Platform, StyleSheet, Text, View } from "react-native";
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+import bundledModel from '../../assets/models/scaniverseRoom.glb';
 
 export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+  const [modelUri, setModelUri] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+  useEffect(() => {
+    (async () => {
+      try {
+        const asset = Asset.fromModule(bundledModel);
+        await asset.downloadAsync();
+        const uri = asset.localUri ?? asset.uri;
+        console.log('✅ Model loaded:', uri);
+        setModelUri(uri);
+      } catch (error) {
+        console.error('❌ Error loading model:', error);
+        setLoadError(String(error));
+      }
+    })();
+  }, []);
+
+  const base64ToArrayBuffer = (base64: string) => {
+    if (typeof Buffer !== 'undefined') {
+      return Buffer.from(base64, 'base64').buffer;
+    }
+
+    const binaryString = atob(base64);
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) bytes[i] = binaryString.charCodeAt(i);
+    return bytes.buffer;
+  };
+
+  const onContextCreate = async (gl: any) => {
+    if (!modelUri) return;
+
+    try {
+      const { drawingBufferWidth: width, drawingBufferHeight: height } = gl;
+
+      const renderer = new Renderer({ gl });
+      renderer.setSize(width, height);
+      renderer.setClearColor(0x1a1a1a);
+
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 10000);
+
+      scene.add(new THREE.AmbientLight(0xffffff, 2));
+      scene.add(new THREE.DirectionalLight(0xffffff, 1.5));
+
+      const base64 = await FileSystem.readAsStringAsync(modelUri, { encoding: 'base64' });
+      const arrayBuffer = base64ToArrayBuffer(base64);
+
+      const loader = new GLTFLoader();
+      loader.parse(
+        arrayBuffer,
+        '',
+        (gltf: any) => {
+          console.log('✅ Native model parsed');
+
+          const box = new THREE.Box3().setFromObject(gltf.scene);
+          const center = box.getCenter(new THREE.Vector3());
+          const size = box.getSize(new THREE.Vector3());
+
+          gltf.scene.position.sub(center);
+
+          const maxDim = Math.max(size.x, size.y, size.z);
+          const fov = camera.fov * (Math.PI / 180);
+          const cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2)) * 1.8;
+
+          camera.position.set(0, maxDim * 0.3, cameraZ);
+          camera.near = 0.1;
+          camera.far = maxDim * 10;
+          camera.lookAt(0, 0, 0);
+          camera.updateProjectionMatrix();
+
+          scene.add(gltf.scene);
+
+          let animationId: any;
+          const render = () => {
+            animationId = requestAnimationFrame(render);
+            gltf.scene.rotation.y += 0.005;
+            renderer.render(scene, camera);
+            gl.endFrameEXP();
+          };
+          render();
+        },
+        undefined,
+        (err: any) => {
+          console.error('❌ Native load error:', err);
+          setLoadError('Failed to load native model');
+        }
+      );
+    } catch (error) {
+      console.error('❌ Native error:', error);
+      setLoadError(String(error));
+    }
+  };
+
+  const SceneRenderer = ({ scene }: { scene: THREE.Group }) => {
+    const groupRef = useRef<THREE.Group>(null);
+
+    useFrame(() => {
+      if (groupRef.current) groupRef.current.rotation.y += 0.005;
+    });
+
+    return (
+      <group ref={groupRef}>
+        <primitive object={scene} />
+      </group>
+    );
+  };
+
+  const WebViewer = () => {
+    const [scene, setScene] = useState<THREE.Group | null>(null);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+      let mounted = true;
+
+      (async () => {
+        try {
+          const response = await fetch(bundledModel as string);
+          const arrayBuffer = await response.arrayBuffer();
+
+          const loader = new GLTFLoader();
+          loader.parse(
+            arrayBuffer,
+            '',
+            (gltf: any) => {
+              if (!mounted) return;
+              setScene(gltf.scene);
+            },
+            (err: any) => {
+              console.error('❌ Web load error:', err);
+              if (mounted) setError('Failed to load web model');
+            }
+          );
+        } catch (err) {
+          console.error('❌ Web error:', err);
+          if (mounted) setError('Failed to fetch web model');
+        }
+      })();
+
+      return () => {
+        mounted = false;
+      };
+    }, []);
+
+    if (error) {
+      return <Text style={styles.error}>{error}</Text>;
+    }
+
+    if (!scene) {
+      return <Text style={styles.loading}>Loading model…</Text>;
+    }
+
+    return (
+      <Canvas camera={{ position: [0, 5, 15], fov: 50 }}>
+        <ambientLight intensity={2} />
+        <directionalLight position={[10, 10, 10]} intensity={1.5} />
+        <pointLight position={[-10, 10, -10]} intensity={0.8} />
+        <SceneRenderer scene={scene} />
+      </Canvas>
+    );
+  };
+
+  return (
+    <View style={styles.container}>
+      {loadError && <Text style={styles.error}>Error: {loadError}</Text>}
+      {Platform.OS === 'web' ? (
+        <WebViewer />
+      ) : modelUri ? (
+        <GLView style={styles.glView} onContextCreate={onContextCreate} />
+      ) : (
+        <Text style={styles.loading}>Loading...</Text>
+      )}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  container: {
+    flex: 1,
+    backgroundColor: '#1a1a1a',
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  glView: {
+    flex: 1,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  error: {
+    color: '#ff0000',
+    textAlign: 'center',
+    padding: 20,
+    fontSize: 16,
+  },
+  loading: {
+    color: '#fff',
+    textAlign: 'center',
+    marginTop: 50,
+    fontSize: 16,
   },
 });
