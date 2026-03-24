@@ -27,6 +27,20 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={main.accent} />,
         }}
       />
-    </Tabs>
+      <Tabs.Screen
+        name="chat"
+        options={{
+          title: 'Chat',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={main.accent} />,
+        }}
+        />
+      <Tabs.Screen
+      name="asetukset"
+      options={{
+        title: 'Vaihda Tilanne',
+        tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={main.accent} />,
+      }}
+      />
+      </Tabs>
   );
 }
