@@ -3,10 +3,10 @@ import { main } from "../../assets/colors";
 
 export default function Simulaatio() {
   const buttons = [
-    "Koti tyhjänä",
-    "Kotiväki paikalla",
-    "Tunnistamaton henkilö kotona",
-    "Ovi jäänyt auki",
+    "Skannaus asetukset",
+    "Alusta skanneri",
+    "Muokkaa huoneita",
+    "Lisää vastuuhenkilöitä",
   ];
 
   return (
