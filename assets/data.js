@@ -14,8 +14,8 @@ export const scenarios = {
   },
 
   tuntematon: {
-    kotona: [{ id: 1, name: "Tuntematon", room: "Takaeteinen" }],
-    tilanne: "Ei ketään kotona",
+    kotona: [{ id: 1, name: "Tuntematon henkilö", room: "Takaeteinen" }],
+    tilanne: "Mahdollinen hätätilanne talossa",
   },
 
   oviAuki: {

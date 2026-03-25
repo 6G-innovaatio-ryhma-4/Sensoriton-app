@@ -3,6 +3,8 @@ import { main } from "../../assets/colors";
 import { scenarios } from "../../assets/data";
 import { useSimulation } from "../../components/SimulationContext";
 import ImageZoom from 'react-native-image-pan-zoom';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+
 
 
 
@@ -33,6 +35,7 @@ export default function Kotisivu() {
       >
         <Image source={imageMap[scenario] || imageMap.kotona} style={[styles.image, { height: height * .5, width: width }]} />
       </ImageZoom>
+      <MaterialIcons name="pinch" color={main.accent} size={50} style= {styles.pinchIcon} />
 
       <View style={styles.list}>
         <Text style={styles.listTitle}>{currentData.tilanne}</Text>
@@ -81,6 +84,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   listTitle: {
+    marginLeft: 10,
     color: main.background,
     fontSize: 25,
     marginBottom: 8,
@@ -97,14 +101,23 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     marginRight: 10,
+    marginLeft: 10,
   },
   name: {
+    marginLeft: 10,
     fontSize: 25,
     fontWeight: "500",
     color: main.background,
   },
   role: {
+    marginLeft: 10,
     fontSize: 20,
     color: "#cfcfcf",
+  },
+  pinchIcon: {
+    position: 'absolute',
+    top: 250,
+    left: 20,
+    opacity: 0.7,
   },
 });
