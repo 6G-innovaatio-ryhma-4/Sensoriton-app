@@ -1,22 +1,32 @@
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { main } from "../../assets/colors";
+import { useSimulation } from "../../components/SimulationContext";
+import { useRouter } from 'expo-router'
 
 export default function Simulaatio() {
+  const { setScenario } = useSimulation();
+  const router  = useRouter()
+
   const buttons = [
-    "Koti tyhjänä",
-    "Kotiväki paikalla",
-    "Tunnistamaton henkilö kotona",
-    "Ovi jäänyt auki",
+    { label: "Koti tyhjänä", key: "tyhjä" },
+    { label: "Kotiväki paikalla", key: "kotona" },
+    { label: "Tunnistamaton henkilö kotona", key: "tuntematon" },
+    { label: "Ovi jäänyt auki", key: "oviAuki" },
   ];
+
+  const vaihdaTilanne = (key) => {
+    setScenario(key)
+    router.navigate('/Kotisivu')
+  }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>simulaatio</Text>
+      <Text style={styles.title}>Simulaatio</Text>
 
       <View style={styles.grid}>
-        {buttons.map((label, index) => (
-          <TouchableOpacity key={index} style={styles.button}>
-            <Text style={styles.buttonText}>{label}</Text>
+        {buttons.map((btn) => (
+          <TouchableOpacity key={btn.key} style={styles.button} onPress={() => vaihdaTilanne(btn.key)}>
+            <Text style={styles.buttonText}>{btn.label}</Text>
           </TouchableOpacity>
         ))}
       </View>
