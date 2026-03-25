@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput, KeyboardAvoidingView } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { main } from '../../assets/colors';
@@ -24,6 +24,12 @@ export default function Chat() {
   const [nextSide, setNextSide] = useState('right');
   const scrollRef = useRef(null);
 
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollToEnd({ animated: true });
+    }
+  }, [messages]);
 
   const sendMessage = () => {
     const text = input.trim();
@@ -111,7 +117,8 @@ const styles = StyleSheet.create({
   },
   messagesContainer: {
     padding: 12,
-    paddingBottom: 18,
+    paddingBottom: 30,
+    marginTop: 30
   },
   messageRow: {
     marginVertical: 6,
@@ -159,7 +166,8 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#eee',
     backgroundColor: main.background,
-    marginBottom: 20,
+    marginBottom: 15,
+    paddingTop: 20,
 
   },
   input: {
