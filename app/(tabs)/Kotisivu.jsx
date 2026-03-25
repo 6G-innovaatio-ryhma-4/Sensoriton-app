@@ -1,52 +1,57 @@
-import { Image, StyleSheet, Text, View } from "react-native";
+import { Image, StyleSheet, Text, View, Dimensions } from "react-native";
 import { main } from "../../assets/colors";
+import { scenarios } from "../../assets/data";
+import { useSimulation } from "../../components/SimulationContext";
+import ImageZoom from 'react-native-image-pan-zoom';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+
+
+
 
 export default function Kotisivu() {
+  const { height, width } = Dimensions.get('window')
+  const { scenario } = useSimulation();
+  const currentData = scenarios[scenario] || scenarios.kotona;
+
+  const imageMap = {
+    tyhjä: require("../../assets/images/pohjakuva.png"),
+    kotona: require("../../assets/images/pohjakuva_kotona.png"),
+    oviAuki: require("../../assets/images/pohjakuva_ovi_auki.png"),
+    tuntematon: require("../../assets/images/pohjakuva_tunkeilija.png"),
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Etusivu</Text>
 
-      <Image
-        source={require("../../assets/images/pohjakuva.png")}
-        style={styles.image}
-        resizeMode="contain"
-      />
+      <ImageZoom
+        cropWidth={width}
+        cropHeight={height}
+        imageWidth={width}
+        imageHeight={height * .5}
+        minScale={.8}
+        maxScale={3}
+        enableCenterFocus={true}
+      >
+        <Image source={imageMap[scenario] || imageMap.kotona} style={[styles.image, { height: height * .5, width: width }]} />
+      </ImageZoom>
+      <MaterialIcons name="pinch" color={main.accent} size={50} style= {styles.pinchIcon} />
 
       <View style={styles.list}>
-        <Text style={styles.listTitle}>Kotona</Text>
+        <Text style={styles.listTitle}>{currentData.tilanne}</Text>
 
-        <View style={styles.row}>
-          <Image
-            source={require("../../assets/icons/personIcon.png")}
-            style={styles.avatar}
-          />
-          <View>
-            <Text style={styles.name}>Sauli Niinistö</Text>
-            <Text style={styles.role}>Oleskelutila</Text>
+        {currentData.kotona.map((person) => (
+          <View key={person.id} style={styles.row}>
+            <Image
+              source={require("../../assets/icons/personIcon.png")}
+              style={styles.avatar}
+            />
+            <View>
+              <Text style={styles.name}>{person.name}</Text>
+              <Text style={styles.role}>{person.room}</Text>
+            </View>
           </View>
-        </View>
-
-        <View style={styles.row}>
-          <Image
-            source={require("../../assets/icons/personIcon.png")}
-            style={styles.avatar}
-          />
-          <View>
-            <Text style={styles.name}>Tarja Halonen</Text>
-            <Text style={styles.role}>Keittiö</Text>
-          </View>
-        </View>
-
-        <View style={styles.row}>
-          <Image
-            source={require("../../assets/icons/personIcon.png")}
-            style={styles.avatar}
-          />
-          <View>
-            <Text style={styles.name}>Alexander Stubb</Text>
-            <Text style={styles.role}>Pesuhuone</Text>
-          </View>
-        </View>
+        ))}
       </View>
     </View>
   );
@@ -64,9 +69,8 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   image: {
-    width: "85%",
-    height: 220,
     marginBottom: 15,
+    resizeMode: "contain",
   },
   list: {
     width: "85%",
@@ -80,7 +84,9 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   listTitle: {
-    fontSize: 16,
+    marginLeft: 10,
+    color: main.background,
+    fontSize: 25,
     marginBottom: 8,
     fontWeight: "600",
   },
@@ -95,13 +101,23 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     marginRight: 10,
+    marginLeft: 10,
   },
   name: {
-    fontSize: 15,
+    marginLeft: 10,
+    fontSize: 25,
     fontWeight: "500",
+    color: main.background,
   },
   role: {
-    fontSize: 12,
-    color: "#333",
+    marginLeft: 10,
+    fontSize: 20,
+    color: "#cfcfcf",
+  },
+  pinchIcon: {
+    position: 'absolute',
+    top: 250,
+    left: 20,
+    opacity: 0.7,
   },
 });
